@@ -14,13 +14,33 @@ variable "aws_region" {
 }
 
 variable "vpc_id" {
-  description = "VPC where RDS security groups are created."
+  description = "Fallback VPC where RDS security groups are created when foundation remote state is not configured."
   type        = string
+  default     = null
 }
 
 variable "private_subnet_ids" {
-  description = "Private subnet IDs for managed MySQL databases."
+  description = "Fallback private subnet IDs for managed MySQL databases when foundation remote state is not configured."
   type        = list(string)
+  default     = null
+}
+
+variable "foundation_state_bucket" {
+  description = "S3 bucket that stores the Terraform state for the shared AWS foundation."
+  type        = string
+  default     = null
+}
+
+variable "foundation_state_key" {
+  description = "S3 object key for the shared AWS foundation Terraform state file."
+  type        = string
+  default     = null
+}
+
+variable "foundation_state_region" {
+  description = "AWS region where the shared AWS foundation Terraform state bucket exists."
+  type        = string
+  default     = null
 }
 
 variable "allowed_mysql_cidr_blocks" {
