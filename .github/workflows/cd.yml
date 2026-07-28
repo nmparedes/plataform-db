@@ -1,0 +1,94 @@
+name: Platform DB CD
+
+on:
+  workflow_run:
+    workflows:
+      - Platform DB CI
+    types:
+      - completed
+
+jobs:
+  apply:
+    if: >-
+      ${{
+        github.event.workflow_run.conclusion == 'success' &&
+        github.event.workflow_run.event == 'push' &&
+        github.event.workflow_run.head_repository.full_name == github.repository &&
+        (
+          github.event.workflow_run.head_branch == 'main' ||
+          github.event.workflow_run.head_branch == 'homologation'
+        )
+      }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    environment: ${{ github.event.workflow_run.head_branch == 'main' && 'production' || 'homologation' }}
+    env:
+      AWS_REGION: ${{ vars.AWS_REGION }}
+      TF_BACKEND_BUCKET: ${{ vars.TF_BACKEND_BUCKET }}
+      TF_BACKEND_DYNAMODB_TABLE: ${{ vars.TF_BACKEND_DYNAMODB_TABLE }}
+      TF_BACKEND_KEY_PREFIX: ${{ vars.TF_BACKEND_KEY_PREFIX }}
+      TF_VAR_project_name: ${{ vars.TF_VAR_project_name }}
+      TF_VAR_environment: ${{ vars.TF_VAR_environment }}
+      TF_VAR_aws_region: ${{ vars.AWS_REGION }}
+      TF_VAR_vpc_id: ${{ vars.TF_VAR_vpc_id }}
+      TF_VAR_private_subnet_ids: ${{ vars.TF_VAR_private_subnet_ids }}
+      TF_VAR_allowed_mysql_cidr_blocks: ${{ vars.TF_VAR_allowed_mysql_cidr_blocks }}
+      TF_VAR_mongodb_atlas_org_id: ${{ vars.TF_VAR_mongodb_atlas_org_id }}
+      TF_VAR_mongodb_atlas_project_name: ${{ vars.TF_VAR_mongodb_atlas_project_name }}
+      TF_VAR_mongodb_atlas_cluster_name: ${{ vars.TF_VAR_mongodb_atlas_cluster_name }}
+      TF_VAR_mongodb_atlas_ip_access_list: ${{ vars.TF_VAR_mongodb_atlas_ip_access_list }}
+      TF_VAR_tags: ${{ vars.TF_VAR_tags }}
+      TF_VAR_mysql_master_username: ${{ secrets.TF_VAR_mysql_master_username }}
+      TF_VAR_mysql_master_password: ${{ secrets.TF_VAR_mysql_master_password }}
+      TF_VAR_billing_mongodb_username: ${{ secrets.TF_VAR_billing_mongodb_username }}
+      TF_VAR_billing_mongodb_password: ${{ secrets.TF_VAR_billing_mongodb_password }}
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      AWS_SESSION_TOKEN: ${{ secrets.AWS_SESSION_TOKEN }}
+      MONGODB_ATLAS_PUBLIC_KEY: ${{ secrets.MONGODB_ATLAS_PUBLIC_KEY }}
+      MONGODB_ATLAS_PRIVATE_KEY: ${{ secrets.MONGODB_ATLAS_PRIVATE_KEY }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Require apply configuration
+        run: |
+          test -n "${AWS_REGION}" || { echo "AWS_REGION is required."; exit 1; }
+          test -n "${TF_BACKEND_BUCKET}" || { echo "TF_BACKEND_BUCKET is required."; exit 1; }
+          test -n "${TF_BACKEND_DYNAMODB_TABLE}" || { echo "TF_BACKEND_DYNAMODB_TABLE is required."; exit 1; }
+          test -n "${TF_BACKEND_KEY_PREFIX}" || { echo "TF_BACKEND_KEY_PREFIX is required."; exit 1; }
+          test -n "${TF_VAR_project_name}" || { echo "TF_VAR_project_name is required."; exit 1; }
+          test -n "${TF_VAR_environment}" || { echo "TF_VAR_environment is required."; exit 1; }
+          test -n "${TF_VAR_vpc_id}" || { echo "TF_VAR_vpc_id is required."; exit 1; }
+          test -n "${TF_VAR_private_subnet_ids}" || { echo "TF_VAR_private_subnet_ids is required."; exit 1; }
+          test -n "${TF_VAR_mongodb_atlas_org_id}" || { echo "TF_VAR_mongodb_atlas_org_id is required."; exit 1; }
+          test -n "${TF_VAR_mongodb_atlas_project_name}" || { echo "TF_VAR_mongodb_atlas_project_name is required."; exit 1; }
+          test -n "${TF_VAR_mongodb_atlas_cluster_name}" || { echo "TF_VAR_mongodb_atlas_cluster_name is required."; exit 1; }
+          test -n "${TF_VAR_mysql_master_username}" || { echo "TF_VAR_mysql_master_username is required."; exit 1; }
+          test -n "${TF_VAR_mysql_master_password}" || { echo "TF_VAR_mysql_master_password is required."; exit 1; }
+          test -n "${TF_VAR_billing_mongodb_username}" || { echo "TF_VAR_billing_mongodb_username is required."; exit 1; }
+          test -n "${TF_VAR_billing_mongodb_password}" || { echo "TF_VAR_billing_mongodb_password is required."; exit 1; }
+          test -n "${AWS_ACCESS_KEY_ID}" || { echo "AWS_ACCESS_KEY_ID is required."; exit 1; }
+          test -n "${AWS_SECRET_ACCESS_KEY}" || { echo "AWS_SECRET_ACCESS_KEY is required."; exit 1; }
+          test -n "${MONGODB_ATLAS_PUBLIC_KEY}" || { echo "MONGODB_ATLAS_PUBLIC_KEY is required."; exit 1; }
+          test -n "${MONGODB_ATLAS_PRIVATE_KEY}" || { echo "MONGODB_ATLAS_PRIVATE_KEY is required."; exit 1; }
+
+      - name: Terraform init with remote backend
+        run: |
+          terraform init \
+            -backend-config="bucket=${TF_BACKEND_BUCKET}" \
+            -backend-config="key=${TF_BACKEND_KEY_PREFIX}/${TF_VAR_environment}.tfstate" \
+            -backend-config="region=${AWS_REGION}" \
+            -backend-config="dynamodb_table=${TF_BACKEND_DYNAMODB_TABLE}"
+
+      - name: Terraform plan
+        run: terraform plan -out=tfplan
+
+      - name: Terraform apply
+        run: terraform apply -auto-approve tfplan

@@ -1,0 +1,32 @@
+project_name = "tech-challenge-phase4"
+environment  = "dev"
+aws_region   = "us-east-1"
+
+vpc_id = "vpc-replace-me"
+private_subnet_ids = [
+  "subnet-replace-me-a",
+  "subnet-replace-me-b"
+]
+
+allowed_mysql_cidr_blocks = [
+  "10.0.0.0/16"
+]
+
+mysql_master_username = "admin"
+mysql_master_password = "replace-with-secure-password"
+
+mongodb_atlas_org_id = "replace-with-atlas-org-id"
+mongodb_atlas_project_name = "tech-challenge-phase4-dev"
+mongodb_atlas_cluster_name = "billing-dev"
+billing_mongodb_username = "billing_service"
+billing_mongodb_password = "replace-with-secure-password"
+
+mongodb_atlas_ip_access_list = [
+  {
+    cidr_block = "10.0.0.0/16"
+    comment    = "EKS private network"
+  }
+]
+
+deletion_protection = false
+skip_final_snapshot = true
