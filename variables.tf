@@ -137,13 +137,13 @@ variable "apply_immediately" {
   default     = false
 }
 
-variable "mongodb_atlas_project_name" {
-  description = "Existing MongoDB Atlas project name."
+variable "billing_mongodb_srv_address" {
+  description = "Existing MongoDB Atlas SRV address for billing-service, without credentials."
   type        = string
 }
 
-variable "mongodb_atlas_cluster_name" {
-  description = "Existing MongoDB Atlas cluster name for billing-service."
+variable "billing_mongodb_connection_uri" {
+  description = "Existing MongoDB Atlas connection URI for billing-service."
   type        = string
 }
 
@@ -163,15 +163,6 @@ variable "billing_mongodb_password" {
   description = "MongoDB Atlas database password for billing-service."
   type        = string
   sensitive   = true
-}
-
-variable "mongodb_atlas_ip_access_list" {
-  description = "CIDR blocks allowed to access the billing MongoDB Atlas cluster."
-  type = list(object({
-    cidr_block = string
-    comment    = string
-  }))
-  default = []
 }
 
 variable "tags" {

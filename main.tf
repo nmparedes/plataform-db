@@ -131,42 +131,6 @@ resource "aws_secretsmanager_secret_version" "mysql_connection" {
   })
 }
 
-data "mongodbatlas_project" "main" {
-  name = var.mongodb_atlas_project_name
-}
-
-data "mongodbatlas_cluster" "billing" {
-  project_id = data.mongodbatlas_project.main.id
-  name       = var.mongodb_atlas_cluster_name
-}
-
-resource "mongodbatlas_database_user" "billing" {
-  username           = var.billing_mongodb_username
-  password           = var.billing_mongodb_password
-  project_id         = data.mongodbatlas_project.main.id
-  auth_database_name = "admin"
-
-  roles {
-    role_name     = "readWrite"
-    database_name = var.billing_mongodb_database_name
-  }
-
-  labels {
-    key   = "service"
-    value = "billing-service"
-  }
-}
-
-resource "mongodbatlas_project_ip_access_list" "billing" {
-  for_each = {
-    for rule in var.mongodb_atlas_ip_access_list : rule.cidr_block => rule
-  }
-
-  project_id = data.mongodbatlas_project.main.id
-  cidr_block = each.value.cidr_block
-  comment    = each.value.comment
-}
-
 resource "aws_secretsmanager_secret" "billing_mongodb_connection" {
   name        = "${var.project_name}/${var.environment}/billing-service/mongodb"
   description = "Connection metadata for billing-service MongoDB Atlas database"
@@ -179,12 +143,11 @@ resource "aws_secretsmanager_secret" "billing_mongodb_connection" {
 resource "aws_secretsmanager_secret_version" "billing_mongodb_connection" {
   secret_id = aws_secretsmanager_secret.billing_mongodb_connection.id
   secret_string = jsonencode({
-    engine           = "mongodb"
-    host             = data.mongodbatlas_cluster.billing.srv_address
-    database         = var.billing_mongodb_database_name
-    username         = var.billing_mongodb_username
-    password         = var.billing_mongodb_password
-    atlasProjectId   = data.mongodbatlas_project.main.id
-    atlasClusterName = data.mongodbatlas_cluster.billing.name
+    engine         = "mongodb"
+    host           = var.billing_mongodb_srv_address
+    database       = var.billing_mongodb_database_name
+    username       = var.billing_mongodb_username
+    password       = var.billing_mongodb_password
+    connection_uri = var.billing_mongodb_connection_uri
   })
 }
