@@ -42,6 +42,6 @@ output "network_configuration_source" {
   value = {
     source             = local.use_foundation_remote_state ? "foundation-remote-state" : "explicit-variables"
     vpc_id             = local.foundation_vpc_id
-    private_subnet_ids = local.foundation_private_subnet_ids
+    private_subnet_ids = local.foundation_subnet_ids
   }
 }

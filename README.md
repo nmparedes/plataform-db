@@ -59,7 +59,8 @@ Cross-service database access is not allowed.
 
 ## Execution Order
 
-Apply the layers in this order:
+Apply the layers in this order when you also intend to create a dedicated VPC for
+the databases:
 
 1. `bootstrap/`
 2. `foundation/`
@@ -104,7 +105,8 @@ terraform init \
 The bootstrap layer is intentionally isolated under
 `platform-db/bootstrap/` to avoid self-referential backend bootstrapping.
 
-Run the shared AWS foundation second. It uses the bootstrap-created backend and
+Run the shared AWS foundation second when you want Terraform to create a
+dedicated VPC for the database stack. It uses the bootstrap-created backend and
 creates only:
 
 - one VPC
@@ -127,8 +129,15 @@ terraform apply
 terraform output
 ```
 
+If the application runtime already exists in AWS, the root module can instead
+reuse that runtime VPC and its subnets directly through the fallback
+variables `vpc_id` and `private_subnet_ids`. This is the recommended approach
+for the current academic homologation environment because the EKS cluster was
+created before the Terraform foundation layer.
+
 Use the foundation outputs to configure the main database stack automatically
-through remote state:
+through remote state only when the database VPC is meant to be created by the
+foundation layer:
 
 - `TF_VAR_foundation_state_bucket`: same value as `TF_BACKEND_BUCKET`
 - `TF_VAR_foundation_state_key`: `foundation/<environment>.tfstate` under the backend prefix
@@ -149,8 +158,15 @@ terraform init \
 terraform plan
 ```
 
-Manual `vpc_id` and `private_subnet_ids` remain available only as a fallback
-when the foundation state is not available yet.
+Manual `vpc_id` and `private_subnet_ids` remain available as the primary hosted
+flow when the databases must be attached to an existing EKS VPC, and as a
+fallback when the foundation state is not available yet.
+
+When that existing EKS VPC is the default VPC and only exposes public subnets,
+set `mysql_publicly_accessible = true` for homologation so the Amazon RDS
+instances can be created successfully in those subnets. This is acceptable for
+the academic demo environment, but it should not be reused as a production
+pattern.
 
 ## GitHub Environment Wiring
 
@@ -167,8 +183,12 @@ reviewed secrets as follows:
 
 Manual network identifiers were removed from the hosted workflow path:
 
-- `TF_VAR_vpc_id`: no longer required when `foundation` state is available
-- `TF_VAR_private_subnet_ids`: no longer required when `foundation` state is available
+- `TF_VAR_vpc_id`: required in the current hosted homologation flow because the
+  databases must be created inside the existing EKS VPC
+- `TF_VAR_private_subnet_ids`: required in the current hosted homologation flow
+  because the databases must be created inside the existing EKS subnets
+- `TF_VAR_mysql_publicly_accessible`: set to `true` in the current hosted
+  homologation flow when the existing EKS VPC only has public/default subnets
 
 Manual hosted inputs that intentionally remain:
 
@@ -176,6 +196,7 @@ Manual hosted inputs that intentionally remain:
 - MongoDB Atlas credentials
 - MySQL and MongoDB service passwords
 - `TF_VAR_allowed_mysql_cidr_blocks`
+- `TF_VAR_mysql_publicly_accessible`
 - MongoDB Atlas project and cluster configuration
 - optional tags and project/environment naming variables
 

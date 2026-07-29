@@ -20,7 +20,7 @@ variable "vpc_id" {
 }
 
 variable "private_subnet_ids" {
-  description = "Fallback private subnet IDs for managed MySQL databases when foundation remote state is not configured."
+  description = "Fallback subnet IDs for managed MySQL databases when foundation remote state is not configured. In the current academic homologation flow these may be the existing EKS subnets."
   type        = list(string)
   default     = null
 }
@@ -99,6 +99,12 @@ variable "mysql_backup_retention_days" {
   description = "RDS backup retention period in days."
   type        = number
   default     = 7
+}
+
+variable "mysql_publicly_accessible" {
+  description = "Whether the RDS instances should receive a public endpoint. Keep false for dedicated private networking; set true for the current academic homologation flow that reuses the default EKS VPC."
+  type        = bool
+  default     = false
 }
 
 variable "mysql_master_username" {

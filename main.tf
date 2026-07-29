@@ -5,8 +5,8 @@ locals {
     var.foundation_state_region != null
   )
 
-  foundation_vpc_id             = local.use_foundation_remote_state ? data.terraform_remote_state.foundation[0].outputs.vpc_id : var.vpc_id
-  foundation_private_subnet_ids = local.use_foundation_remote_state ? data.terraform_remote_state.foundation[0].outputs.private_subnet_ids : var.private_subnet_ids
+  foundation_vpc_id     = local.use_foundation_remote_state ? data.terraform_remote_state.foundation[0].outputs.vpc_id : var.vpc_id
+  foundation_subnet_ids = local.use_foundation_remote_state ? data.terraform_remote_state.foundation[0].outputs.private_subnet_ids : var.private_subnet_ids
 
   common_tags = merge(var.tags, {
     Project     = var.project_name
@@ -39,7 +39,7 @@ check "network_inputs" {
 
 resource "aws_db_subnet_group" "mysql" {
   name       = "${var.project_name}-${var.environment}-mysql"
-  subnet_ids = local.foundation_private_subnet_ids
+  subnet_ids = local.foundation_subnet_ids
 
   tags = merge(local.common_tags, {
     Name = "${var.project_name}-${var.environment}-mysql"
@@ -91,7 +91,7 @@ resource "aws_db_instance" "mysql" {
   password                = var.mysql_master_password
   db_subnet_group_name    = aws_db_subnet_group.mysql.name
   vpc_security_group_ids  = [aws_security_group.mysql.id]
-  publicly_accessible     = false
+  publicly_accessible     = var.mysql_publicly_accessible
   backup_retention_period = var.mysql_backup_retention_days
   deletion_protection     = var.deletion_protection
   skip_final_snapshot     = var.skip_final_snapshot

@@ -12,6 +12,7 @@ foundation_state_region = "us-east-1"
 #   "subnet-replace-me-a",
 #   "subnet-replace-me-b"
 # ]
+# mysql_publicly_accessible = true
 
 allowed_mysql_cidr_blocks = [
   "10.0.0.0/16"
