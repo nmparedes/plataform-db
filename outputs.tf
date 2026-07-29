@@ -16,9 +16,7 @@ output "billing_mongodb" {
   description = "MongoDB Atlas billing database metadata."
   value = {
     service_name = "billing-service"
-    project_id   = data.mongodbatlas_project.main.id
-    cluster_name = data.mongodbatlas_cluster.billing.name
-    srv_address  = data.mongodbatlas_cluster.billing.srv_address
+    srv_address  = var.billing_mongodb_srv_address
     database     = var.billing_mongodb_database_name
     secret_arn   = aws_secretsmanager_secret.billing_mongodb_connection.arn
   }
