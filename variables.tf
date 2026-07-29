@@ -137,49 +137,14 @@ variable "apply_immediately" {
   default     = false
 }
 
-variable "mongodb_atlas_org_id" {
-  description = "MongoDB Atlas organization ID."
-  type        = string
-}
-
 variable "mongodb_atlas_project_name" {
-  description = "MongoDB Atlas project name."
+  description = "Existing MongoDB Atlas project name."
   type        = string
 }
 
 variable "mongodb_atlas_cluster_name" {
-  description = "MongoDB Atlas cluster name for billing-service."
+  description = "Existing MongoDB Atlas cluster name for billing-service."
   type        = string
-}
-
-variable "mongodb_major_version" {
-  description = "MongoDB major version for the Atlas cluster."
-  type        = string
-  default     = "7.0"
-}
-
-variable "mongodb_atlas_provider_name" {
-  description = "MongoDB Atlas provider name. TENANT supports shared-tier clusters."
-  type        = string
-  default     = "TENANT"
-}
-
-variable "mongodb_atlas_backing_provider_name" {
-  description = "Cloud provider backing the MongoDB Atlas cluster."
-  type        = string
-  default     = "AWS"
-}
-
-variable "mongodb_atlas_region_name" {
-  description = "MongoDB Atlas provider region name."
-  type        = string
-  default     = "US_EAST_1"
-}
-
-variable "mongodb_atlas_instance_size_name" {
-  description = "MongoDB Atlas instance size."
-  type        = string
-  default     = "M0"
 }
 
 variable "billing_mongodb_database_name" {
