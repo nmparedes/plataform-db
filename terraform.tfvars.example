@@ -2,11 +2,17 @@ project_name = "tech-challenge-phase4"
 environment  = "dev"
 aws_region   = "us-east-1"
 
-vpc_id = "vpc-replace-me"
-private_subnet_ids = [
-  "subnet-replace-me-a",
-  "subnet-replace-me-b"
-]
+foundation_state_bucket = "replace-with-terraform-state-bucket"
+foundation_state_key    = "platform-db/foundation/dev.tfstate"
+foundation_state_region = "us-east-1"
+
+# Fallback only when foundation remote state is not available:
+# vpc_id = "vpc-replace-me"
+# private_subnet_ids = [
+#   "subnet-replace-me-a",
+#   "subnet-replace-me-b"
+# ]
+# mysql_publicly_accessible = true
 
 allowed_mysql_cidr_blocks = [
   "10.0.0.0/16"

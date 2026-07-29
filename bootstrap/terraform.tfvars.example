@@ -1,0 +1,9 @@
+project_name          = "tech-challenge-phase4"
+aws_region            = "us-east-1"
+state_bucket_name     = "replace-with-globally-unique-terraform-state-bucket"
+state_lock_table_name = "tech-challenge-phase4-terraform-locks"
+state_key_prefix      = "platform-db"
+
+tags = {
+  Environment = "shared"
+}

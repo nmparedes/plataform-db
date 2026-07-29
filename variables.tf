@@ -14,13 +14,33 @@ variable "aws_region" {
 }
 
 variable "vpc_id" {
-  description = "VPC where RDS security groups are created."
+  description = "Fallback VPC where RDS security groups are created when foundation remote state is not configured."
   type        = string
+  default     = null
 }
 
 variable "private_subnet_ids" {
-  description = "Private subnet IDs for managed MySQL databases."
+  description = "Fallback subnet IDs for managed MySQL databases when foundation remote state is not configured. In the current academic homologation flow these may be the existing EKS subnets."
   type        = list(string)
+  default     = null
+}
+
+variable "foundation_state_bucket" {
+  description = "S3 bucket that stores the Terraform state for the shared AWS foundation."
+  type        = string
+  default     = null
+}
+
+variable "foundation_state_key" {
+  description = "S3 object key for the shared AWS foundation Terraform state file."
+  type        = string
+  default     = null
+}
+
+variable "foundation_state_region" {
+  description = "AWS region where the shared AWS foundation Terraform state bucket exists."
+  type        = string
+  default     = null
 }
 
 variable "allowed_mysql_cidr_blocks" {
@@ -79,6 +99,12 @@ variable "mysql_backup_retention_days" {
   description = "RDS backup retention period in days."
   type        = number
   default     = 7
+}
+
+variable "mysql_publicly_accessible" {
+  description = "Whether the RDS instances should receive a public endpoint. Keep false for dedicated private networking; set true for the current academic homologation flow that reuses the default EKS VPC."
+  type        = bool
+  default     = false
 }
 
 variable "mysql_master_username" {

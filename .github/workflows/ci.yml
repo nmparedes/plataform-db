@@ -4,7 +4,7 @@ on:
   pull_request:
   push:
     branches:
-      - main
+      - development
       - homologation
 
 jobs:
@@ -22,6 +22,18 @@ jobs:
       - name: Terraform fmt
         run: terraform fmt -check -recursive
 
+      - name: Terraform bootstrap init
+        run: terraform -chdir=bootstrap init
+
+      - name: Terraform bootstrap validate
+        run: terraform -chdir=bootstrap validate
+
+      - name: Terraform foundation init without backend
+        run: terraform -chdir=foundation init -backend=false
+
+      - name: Terraform foundation validate
+        run: terraform -chdir=foundation validate
+
       - name: Terraform init without backend
         run: terraform init -backend=false
 
@@ -29,12 +41,12 @@ jobs:
         run: terraform validate
 
   plan:
-    if: ${{ github.event_name == 'push' && (github.ref_name == 'main' || github.ref_name == 'homologation') }}
+    if: ${{ github.event_name == 'push' && github.ref_name == 'homologation' }}
     needs: validate
     runs-on: ubuntu-latest
     permissions:
       contents: read
-    environment: ${{ github.ref_name == 'main' && 'production' || 'homologation' }}
+    environment: homologation
     env:
       AWS_REGION: ${{ vars.AWS_REGION }}
       TF_BACKEND_BUCKET: ${{ vars.TF_BACKEND_BUCKET }}
@@ -45,6 +57,7 @@ jobs:
       TF_VAR_aws_region: ${{ vars.AWS_REGION }}
       TF_VAR_vpc_id: ${{ vars.TF_VAR_vpc_id }}
       TF_VAR_private_subnet_ids: ${{ vars.TF_VAR_private_subnet_ids }}
+      TF_VAR_mysql_publicly_accessible: ${{ vars.TF_VAR_mysql_publicly_accessible }}
       TF_VAR_allowed_mysql_cidr_blocks: ${{ vars.TF_VAR_allowed_mysql_cidr_blocks }}
       TF_VAR_mongodb_atlas_org_id: ${{ vars.TF_VAR_mongodb_atlas_org_id }}
       TF_VAR_mongodb_atlas_project_name: ${{ vars.TF_VAR_mongodb_atlas_project_name }}
@@ -75,8 +88,9 @@ jobs:
           test -n "${TF_BACKEND_KEY_PREFIX}" || { echo "TF_BACKEND_KEY_PREFIX is required."; exit 1; }
           test -n "${TF_VAR_project_name}" || { echo "TF_VAR_project_name is required."; exit 1; }
           test -n "${TF_VAR_environment}" || { echo "TF_VAR_environment is required."; exit 1; }
-          test -n "${TF_VAR_vpc_id}" || { echo "TF_VAR_vpc_id is required."; exit 1; }
-          test -n "${TF_VAR_private_subnet_ids}" || { echo "TF_VAR_private_subnet_ids is required."; exit 1; }
+          test -n "${TF_VAR_vpc_id}" || { echo "TF_VAR_vpc_id is required for the current hosted flow."; exit 1; }
+          test -n "${TF_VAR_private_subnet_ids}" || { echo "TF_VAR_private_subnet_ids is required for the current hosted flow."; exit 1; }
+          test -n "${TF_VAR_mysql_publicly_accessible}" || { echo "TF_VAR_mysql_publicly_accessible is required for the current hosted flow."; exit 1; }
           test -n "${TF_VAR_mongodb_atlas_org_id}" || { echo "TF_VAR_mongodb_atlas_org_id is required."; exit 1; }
           test -n "${TF_VAR_mongodb_atlas_project_name}" || { echo "TF_VAR_mongodb_atlas_project_name is required."; exit 1; }
           test -n "${TF_VAR_mongodb_atlas_cluster_name}" || { echo "TF_VAR_mongodb_atlas_cluster_name is required."; exit 1; }
@@ -88,7 +102,6 @@ jobs:
           test -n "${AWS_SECRET_ACCESS_KEY}" || { echo "AWS_SECRET_ACCESS_KEY is required."; exit 1; }
           test -n "${MONGODB_ATLAS_PUBLIC_KEY}" || { echo "MONGODB_ATLAS_PUBLIC_KEY is required."; exit 1; }
           test -n "${MONGODB_ATLAS_PRIVATE_KEY}" || { echo "MONGODB_ATLAS_PRIVATE_KEY is required."; exit 1; }
-
       - name: Terraform init with remote backend
         run: |
           terraform init \

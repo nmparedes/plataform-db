@@ -1,4 +1,13 @@
 locals {
+  use_foundation_remote_state = (
+    var.foundation_state_bucket != null &&
+    var.foundation_state_key != null &&
+    var.foundation_state_region != null
+  )
+
+  foundation_vpc_id     = local.use_foundation_remote_state ? data.terraform_remote_state.foundation[0].outputs.vpc_id : var.vpc_id
+  foundation_subnet_ids = local.use_foundation_remote_state ? data.terraform_remote_state.foundation[0].outputs.private_subnet_ids : var.private_subnet_ids
+
   common_tags = merge(var.tags, {
     Project     = var.project_name
     Environment = var.environment
@@ -7,9 +16,30 @@ locals {
   })
 }
 
+data "terraform_remote_state" "foundation" {
+  count   = local.use_foundation_remote_state ? 1 : 0
+  backend = "s3"
+
+  config = {
+    bucket = var.foundation_state_bucket
+    key    = var.foundation_state_key
+    region = var.foundation_state_region
+  }
+}
+
+check "network_inputs" {
+  assert {
+    condition = (
+      local.use_foundation_remote_state ||
+      (var.vpc_id != null && var.private_subnet_ids != null)
+    )
+    error_message = "Set foundation_state_bucket, foundation_state_key and foundation_state_region together, or provide both fallback values vpc_id and private_subnet_ids."
+  }
+}
+
 resource "aws_db_subnet_group" "mysql" {
   name       = "${var.project_name}-${var.environment}-mysql"
-  subnet_ids = var.private_subnet_ids
+  subnet_ids = local.foundation_subnet_ids
 
   tags = merge(local.common_tags, {
     Name = "${var.project_name}-${var.environment}-mysql"
@@ -19,7 +49,7 @@ resource "aws_db_subnet_group" "mysql" {
 resource "aws_security_group" "mysql" {
   name        = "${var.project_name}-${var.environment}-mysql"
   description = "MySQL access for Phase 4 service-owned databases"
-  vpc_id      = var.vpc_id
+  vpc_id      = local.foundation_vpc_id
 
   dynamic "ingress" {
     for_each = var.allowed_mysql_cidr_blocks
@@ -61,7 +91,7 @@ resource "aws_db_instance" "mysql" {
   password                = var.mysql_master_password
   db_subnet_group_name    = aws_db_subnet_group.mysql.name
   vpc_security_group_ids  = [aws_security_group.mysql.id]
-  publicly_accessible     = false
+  publicly_accessible     = var.mysql_publicly_accessible
   backup_retention_period = var.mysql_backup_retention_days
   deletion_protection     = var.deletion_protection
   skip_final_snapshot     = var.skip_final_snapshot
