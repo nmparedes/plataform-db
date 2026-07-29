@@ -8,7 +8,7 @@ microservices.
 - Amazon RDS MySQL for `customer-service`
 - Amazon RDS MySQL for `os-service`
 - Amazon RDS MySQL for `workshop-service`
-- MongoDB Atlas for `billing-service`
+- MongoDB Atlas integration for `billing-service`
 - remote-backend-compatible Terraform workflow
 
 This repository does not run migrations and does not deploy application code.
@@ -197,7 +197,7 @@ Manual hosted inputs that intentionally remain:
 - MySQL and MongoDB service passwords
 - `TF_VAR_allowed_mysql_cidr_blocks`
 - `TF_VAR_mysql_publicly_accessible`
-- MongoDB Atlas project and cluster configuration
+- MongoDB Atlas project and cluster names for the pre-existing Atlas environment
 - optional tags and project/environment naming variables
 
 ## Local Validation
@@ -265,6 +265,8 @@ approval remains a GitHub Environment responsibility.
   Lambda or application infrastructure
 - foundation creates only shared networking primitives; it does not provision
   EKS, Lambda or application infrastructure
+- the root stack expects the MongoDB Atlas project and cluster to already exist
+  in the current academic homologation flow
 
 ## Delivery Evidence
 

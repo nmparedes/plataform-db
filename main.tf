@@ -131,26 +131,19 @@ resource "aws_secretsmanager_secret_version" "mysql_connection" {
   })
 }
 
-resource "mongodbatlas_project" "main" {
-  name   = var.mongodb_atlas_project_name
-  org_id = var.mongodb_atlas_org_id
+data "mongodbatlas_project" "main" {
+  name = var.mongodb_atlas_project_name
 }
 
-resource "mongodbatlas_cluster" "billing" {
-  project_id                  = mongodbatlas_project.main.id
-  name                        = var.mongodb_atlas_cluster_name
-  cluster_type                = "REPLICASET"
-  mongo_db_major_version      = var.mongodb_major_version
-  provider_name               = var.mongodb_atlas_provider_name
-  backing_provider_name       = var.mongodb_atlas_backing_provider_name
-  provider_region_name        = var.mongodb_atlas_region_name
-  provider_instance_size_name = var.mongodb_atlas_instance_size_name
+data "mongodbatlas_cluster" "billing" {
+  project_id = data.mongodbatlas_project.main.id
+  name       = var.mongodb_atlas_cluster_name
 }
 
 resource "mongodbatlas_database_user" "billing" {
   username           = var.billing_mongodb_username
   password           = var.billing_mongodb_password
-  project_id         = mongodbatlas_project.main.id
+  project_id         = data.mongodbatlas_project.main.id
   auth_database_name = "admin"
 
   roles {
@@ -169,7 +162,7 @@ resource "mongodbatlas_project_ip_access_list" "billing" {
     for rule in var.mongodb_atlas_ip_access_list : rule.cidr_block => rule
   }
 
-  project_id = mongodbatlas_project.main.id
+  project_id = data.mongodbatlas_project.main.id
   cidr_block = each.value.cidr_block
   comment    = each.value.comment
 }
@@ -187,11 +180,11 @@ resource "aws_secretsmanager_secret_version" "billing_mongodb_connection" {
   secret_id = aws_secretsmanager_secret.billing_mongodb_connection.id
   secret_string = jsonencode({
     engine           = "mongodb"
-    host             = mongodbatlas_cluster.billing.srv_address
+    host             = data.mongodbatlas_cluster.billing.srv_address
     database         = var.billing_mongodb_database_name
     username         = var.billing_mongodb_username
     password         = var.billing_mongodb_password
-    atlasProjectId   = mongodbatlas_project.main.id
-    atlasClusterName = mongodbatlas_cluster.billing.name
+    atlasProjectId   = data.mongodbatlas_project.main.id
+    atlasClusterName = data.mongodbatlas_cluster.billing.name
   })
 }
